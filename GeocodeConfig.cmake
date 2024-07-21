@@ -1,0 +1,7 @@
+include(CMakeFindDependencyMacro)
+find_dependency(Boost 1.80)
+find_dependency(cpr)
+find_dependency(Threads)
+find_dependency(NanoLog)
+include(${CMAKE_CURRENT_LIST_DIR}/GeocodeLibTargets.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/GeocodeApiTargets.cmake)

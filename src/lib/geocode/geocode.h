@@ -10,8 +10,8 @@
 #include <expected>
 #include <limits>
 #include <optional>
+#include <ranges>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include <boost/math/constants/constants.hpp>
@@ -134,16 +134,22 @@ namespace spt::geocode
   template <LatLng P>
   std::vector<Cluster<P>> cluster( const std::vector<P>& points, const int rounds, int numClusters )
   {
-    struct PointWrapper
+    struct PointDecorator
     {
       const P* point;
       int cluster{ -1 }; // no default cluster
       double minDist{ std::numeric_limits<double>::max() }; // default infinite distance to nearest cluster
+
+      double distance( const P& p ) const
+      {
+        return ( p.latitude - point->latitude ) * ( p.latitude - point->latitude ) +
+          ( p.longitude - point->longitude ) * ( p.longitude - point->longitude );
+      }
     };
 
     if ( points.empty() ) return {};
 
-    auto vec = std::vector<PointWrapper>{};
+    auto vec = std::vector<PointDecorator>{};
     vec.reserve( points.size() );
     for ( const auto& p : points )
     {
@@ -184,19 +190,9 @@ namespace spt::geocode
       }
 
       // Create vectors to keep track of data needed to compute means
-      std::vector<int> nPoints{};
-      nPoints.reserve( numClusters );
-      std::vector<double> sumX{};
-      sumX.reserve( numClusters );
-      std::vector<double> sumY{};
-      sumY.reserve( numClusters );
-
-      for ( int j = 0; j < numClusters; ++j )
-      {
-        nPoints.push_back( 0 );
-        sumX.push_back( 0.0 );
-        sumY.push_back( 0.0 );
-      }
+      auto nPoints = std::vector( numClusters, 0 );
+      auto sumX = std::vector( numClusters, 0.0 );
+      auto sumY = std::vector( numClusters, 0.0 );
 
       // Iterate over points to append data to centroids
       for ( auto& p : vec )
@@ -209,7 +205,7 @@ namespace spt::geocode
       }
 
       // Compute the new centroids
-      for ( auto c = std::begin(centroids); c != std::end(centroids); ++c )
+      for ( auto c = std::begin( centroids ); c != std::end( centroids ); ++c )
       {
         auto clusterId = c - std::begin( centroids );
         c->latitude = sumX[clusterId] / nPoints[clusterId];
@@ -228,6 +224,7 @@ namespace spt::geocode
     }
 
     for ( const auto p : vec ) out[p.cluster].points.push_back( p.point );
+    std::ranges::sort( out, []( const Cluster<P>& lhs, const Cluster<P>& rhs ) { return lhs.points.size() > rhs.points.size(); } );
 
     return out;
   }

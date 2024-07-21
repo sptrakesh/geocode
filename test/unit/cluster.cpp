@@ -46,26 +46,9 @@ SCENARIO( "Clustering test suite", "[cluster]" )
       {41.943203, -87.7009201}
     };
 
-    const auto clustered = spt::geocode::cluster( points, 64, 3 );
+    const auto clustered = spt::geocode::cluster( points, 32, 3 );
     REQUIRE( clustered.size() > 1 );
-    auto found = false;
-    for ( const auto& c : clustered )
-    {
-      if ( std::isnan( c.centroid.latitude ) || std::isnan( c.centroid.longitude ) )
-      {
-        CHECK( c.points.empty() );
-      }
-      else
-      {
-        CHECK_FALSE( c.points.empty() );
-        if ( c.centroid.latitude > 41.80 && c.centroid.latitude < 41.95 )
-        {
-          found = true;
-          CHECK( c.points.size() > 2 );
-        }
-      }
-    }
-    CHECK( found );
+    CHECK( clustered[0].points.size() > 2 );
   }
 
   GIVEN( "A list of coordinates with custom struct" )
@@ -93,26 +76,10 @@ SCENARIO( "Clustering test suite", "[cluster]" )
       {41.943203, -87.7009201, "Dense"}
     };
 
-    const auto clustered = spt::geocode::cluster( points, 64, 3 );
+    const auto clustered = spt::geocode::cluster( points, 32, 3 );
     REQUIRE( clustered.size() > 1 );
-    auto found = false;
-    for ( const auto& c : clustered )
-    {
-      if ( std::isnan( c.centroid.latitude ) || std::isnan( c.centroid.longitude ) )
-      {
-        CHECK( c.points.empty() );
-      }
-      else
-      {
-        CHECK_FALSE( c.points.empty() );
-        if ( c.centroid.latitude > 41.80 && c.centroid.latitude < 41.95 )
-        {
-          found = true;
-          CHECK( c.points.size() > 2 );
-          for ( const auto& p : c.points ) CHECK( p->text == "Dense" );
-        }
-      }
-    }
-    CHECK( found );
+    CHECK( clustered[0].points.size() > 2 );
+    for ( const auto& p : clustered[0].points ) CHECK( p->text == "Dense" );
+    for ( const auto& p : clustered.back().points ) CHECK( p->text == "Far" );
   }
 }

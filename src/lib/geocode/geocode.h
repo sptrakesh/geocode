@@ -139,12 +139,6 @@ namespace spt::geocode
       const P* point;
       int cluster{ -1 }; // no default cluster
       double minDist{ std::numeric_limits<double>::max() }; // default infinite distance to nearest cluster
-
-      double distance( const P& p ) const
-      {
-        return ( p.latitude - point->latitude ) * ( p.latitude - point->latitude ) +
-          ( p.longitude - point->longitude ) * ( p.longitude - point->longitude );
-      }
     };
 
     if ( points.empty() ) return {};

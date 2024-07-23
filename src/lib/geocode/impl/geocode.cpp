@@ -16,6 +16,7 @@
   #endif
 #endif
 
+#include <array>
 #include <format>
 #include <boost/json/parse.hpp>
 #include <cpr/cpr.h>
@@ -36,9 +37,14 @@ std::expected<Point, std::string> spt::geocode::fromLocationCode( const std::str
 
   if ( !openlocationcode::IsValid( code ) ) return O{ std::unexpect, "Invalid code" };
   const auto area = openlocationcode::Decode( code );
+  auto points = std::array{
+    Point{ area.GetLatitudeLo(), area.GetLongitudeLo() },
+    Point{ area.GetLatitudeHi(), area.GetLongitudeHi() }
+  };
+  auto cp = centroid( std::span<const Point>( points ) );
   auto out = O{ std::in_place };
-  out.value().latitude = ( area.GetLatitudeLo() + area.GetLatitudeHi() ) / 2.0;
-  out.value().longitude = ( area.GetLongitudeLo() + area.GetLongitudeHi() ) / 2.0;
+  out.value().latitude = cp.latitude;
+  out.value().longitude = cp.longitude;
   out.value().accuracy = static_cast<double>( area.GetCodeLength() );
   return out;
 }

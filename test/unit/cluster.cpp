@@ -82,4 +82,41 @@ SCENARIO( "Clustering test suite", "[cluster]" )
     for ( const auto& p : clustered[0].points ) CHECK( p->text == "Dense" );
     for ( const auto& p : clustered.back().points ) CHECK( p->text == "Far" );
   }
+
+  GIVEN( "Another set of geo coordinates" )
+  {
+    const auto points = std::vector<spt::geocode::Point>{
+      {41.9441223, -87.7002258},
+      {41.8577652, -87.6664047},
+      {41.8693924, -87.661911},
+      {41.8690758, -87.6616592},
+      {41.8704987, -87.661705},
+      {41.8696098, -87.6615372},
+      {41.8694458, -87.6615067},
+      {41.8691406, -87.6616974},
+      {41.8962097, -87.6552582},
+      {41.9432983, -87.7008286}
+    };
+
+    const auto clustered = spt::geocode::cluster( points, 32, 3 );
+    REQUIRE( clustered.size() > 1 );
+    CHECK( clustered[0].points.size() > 2 );
+  }
+
+  GIVEN( "An empty set of geo coordinates" )
+  {
+    const auto points = std::vector<spt::geocode::Point>{};
+    const auto clustered = spt::geocode::cluster( points, 32, 3 );
+    CHECK( clustered.empty() );
+  }
+
+  GIVEN( "A single geo coordinate" )
+  {
+    const auto points = std::vector<spt::geocode::Point>{ {41.9441223, -87.7002258} };
+
+    const auto clustered = spt::geocode::cluster( points, 32, 3 );
+    REQUIRE( clustered.size() == 1 );
+    CHECK_THAT( clustered.front().centroid.latitude, Catch::Matchers::WithinAbs( points.front().latitude, 0.0001 ) );
+    CHECK_THAT( clustered.front().centroid.longitude, Catch::Matchers::WithinAbs( points.front().longitude, 0.0001 ) );
+  }
 }

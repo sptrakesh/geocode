@@ -26,4 +26,13 @@ SCENARIO( "Distance computation test suite", "[distance]" )
     CHECK_THAT( d, Catch::Matchers::WithinAbs( 2446844.3375, 0.001 ) );
     std::cout << "Azimuth distance " << a << '\n';
   }
+
+  GIVEN( "A set of points with a centre location" )
+  {
+    const auto p1 = spt::geocode::Point{ .latitude = 35.9127, .longitude = -90.0995 };
+    const auto p2 = spt::geocode::Point{ .latitude = 0.0, .longitude = 0.0 };
+    const auto [d, a] = spt::geocode::distance( p1, p2 );
+    CHECK_THAT( d, Catch::Matchers::WithinAbs( 10019330.3042, 0.0001 ) );
+    std::cout << "Azimuth distance " << a << '\n';
+  }
 }

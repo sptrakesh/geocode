@@ -6,6 +6,7 @@ Provides functions for performing common activities such as:
 * Check if a point falls within a bounding polygon.
 * Look up the street address for a specified geo-coordinate using [positionstack](https://positionstack.com/).
 * Look up the geo-coordinate for a specified street address using [positionstack](https://positionstack.com/).
+* Compute the centroid of a set of geo-coordinates.
 * Cluster a set of coordinates using [k-means](https://en.wikipedia.org/wiki/K-means_clustering) algorithm.
 * Convert coordinates into **Open Location Code**.
 

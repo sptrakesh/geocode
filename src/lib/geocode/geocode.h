@@ -11,6 +11,7 @@
 #include <limits>
 #include <optional>
 #include <ranges>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -37,18 +38,75 @@ namespace spt::geocode
     std::optional<Point> location{ std::nullopt };
   };
 
+  inline double degreesToRadians( const double degree ) { return degree/180.0 * boost::math::constants::pi<double>(); };
+  inline double radiansToDegrees( const double radians ) { return ( radians * 180.0 ) / boost::math::constants::pi<double>(); };
+
+  /**
+   * Convert the specified geo-location identified by the latitude and longitude to the Open Location Code representation.
+   * @param latitude The latitude in degrees for the geo-location.
+   * @param longitude The longitude in degrees for the geo-location.
+   * @return The Open Location Code representation of the geo-location.
+   */
   std::string toLocationCode( double latitude, double longitude );
+
+  /**
+   * Convert the specified geo-coordinate point to the Open Location Code representation.
+   * @param point The *Point* representing the geo-coordinates to be encoded.
+   * @return The Open Location Code representation of the point.
+   */
   inline std::string toLocationCode( const Point& point ) { return toLocationCode( point.latitude, point.longitude ); }
 
+  /**
+   * Decode the Open Location Code value to a representative geo-coordinate point.
+   *
+   * **Note:** The Google API returns a pair of coordinates that represent the code.  Our implementation returns the
+   * average values for the latitude and longitude.
+   * @param code Convert the specified Open Location Code to a representative geo-coordinate point.
+   * @return The decoded geo-coordinate, or an error string if the specified code is invalid.
+   */
   std::expected<Point, std::string> fromLocationCode( const std::string& code );
 
+  /**
+   * Look up the closest approximate address for the specified geo-location from the *positionstack* API.
+   * @param latitude The latitude for the geo-location to look up closest address for.
+   * @param longitude The longitude for the geo-location to look up closest address for.
+   * @param key The *positionstack* API key to use to make the request to their web service.
+   * @return The returned address or an error string if the lookup fails.
+   */
   std::expected<Address, std::string> address( double latitude, double longitude, const std::string& key );
+
+  /**
+   * Look up the closest approximaet address for the specified geo-coordinates from the *positionstack* API.
+   * @param point The geo-coordinates for which the closest address is to be looked up.
+   * @param key The *positionstack* API key to use to make the request to their web service.
+   * @return The returned address or an error string if the lookup fails.
+   */
   inline std::expected<Address, std::string> address( const Point& point, const std::string& key ) { return address( point.latitude, point.longitude, key ); }
 
+  /**
+   * Look up the geo-coordinates for the specified address usnig the *positionstack* API.
+   * @param address The text address to look up geo-coordinates for.
+   * @param key The *positionstack* API key to use to make the request to their web service.
+   * @return The geo-coordinates for the address or an error string if the lookup fails.
+   */
   std::expected<Point, std::string> fromAddress( const std::string& address, const std::string& key );
+
+  /**
+   * Look up the geo-coordinates for the specified address usnig the *positionstack* API.
+   * @param address The address to look up geo-coordinates for.
+   * @param key The *positionstack* API key to use to make the request to their web service.
+   * @return The geo-coordinates for the address or an error string if the lookup fails.
+   */
   inline std::expected<Point, std::string> fromAddress( const Address& address, const std::string& key ) { return fromAddress( address.text, key ); }
 
   using Polygon = std::vector<Point>;
+
+  /**
+   * Check whether the geo-coordinate falls within the specified geo-fence.
+   * @param point The point to check within bounds.
+   * @param polygon The polygon that represents the bounding area to check.
+   * @return Returns `true` if the point falls within the bounding area.
+   */
   bool within( const Point& point, const Polygon& polygon );
 
   template <typename T>
@@ -59,16 +117,91 @@ namespace spt::geocode
     T::longitude;
   };
 
+  /**
+   * Compute the centroid for the specified geo-coordinates.
+   * @tparam P A geo-coordinate structure that conforms to the *LatLng* concept
+   * @param points Pointers to the geo-coordinates for which the centroid is to be computed.
+   * @return The computed centroid for the points.
+   */
+  template <LatLng P>
+  P centroid( std::span<const P*> points )
+  {
+    P point;
+    if ( points.empty() ) return point;
+    if ( points.size() == 1 )
+    {
+      point.latitude = points.front()->latitude;
+      point.longitude = points.front()->longitude;
+      return point;
+    }
+
+    double x{ 0.0 };
+    double y{ 0.0 };
+    double z{ 0.0 };
+
+    for ( const auto& p : points )
+    {
+      const auto lat = degreesToRadians( p->latitude );
+      const auto lon = degreesToRadians( p->longitude );
+      x += std::cos( lat ) * std::cos( lon );
+      y += std::cos( lat ) * std::sin( lon );
+      z += std::sin( lat );
+    }
+
+    x = x / static_cast<double>( points.size() );
+    y = y / static_cast<double>( points.size() );
+    z = z / static_cast<double>( points.size() );
+
+    const auto lon = std::atan2( y, x );
+    const auto hyp = std::sqrt( ( x * x ) + ( y * y ) );
+    const auto lat = std::atan2( z, hyp );
+
+    point.latitude = radiansToDegrees( lat );
+    point.longitude = radiansToDegrees( lon );
+    return point;
+  }
+
+  /**
+   * Compute the centroid for the specified collection of geo-coordinates.
+   * @tparam P The geo-coordinate structure conforming to the *LatLng* concept.
+   * @param points The collection of points for which centroid is to be computed.
+   * @return The computed centroid of the geo-coordinates.
+   */
+  template <LatLng P>
+  P centroid( std::span<const P> points )
+  {
+    auto vec = std::vector<const P*>{};
+    vec.reserve( points.size() );
+    for ( const auto& p : points ) vec.push_back( &p );
+    return centroid( std::span<const P*>( vec ) );
+  }
+
   struct Distance
   {
     double distance;
     double azimuth;
   };
 
+  /**
+   * Compute the geodesic distance between two geo-coordinates using Vincenty's formula.
+   * @tparam P The geo-coordinate type that conforms to the *LatLng* concept.
+   * @param lhs The first point from which distance is to be computed.
+   * @param rhs The second point to which distance is to be computed.
+   * @return A structure representing the computed distance and azimuth.
+   */
   template <LatLng P>
   Distance distance( const P& lhs, const P& rhs )
   {
-    const auto degreesToRadians = []( const double degree ) { return degree/180.0 * boost::math::constants::pi<double>(); };
+    const auto haversine = [&lhs, &rhs]()
+    {
+      const auto lat1 = degreesToRadians( lhs.latitude );
+      const auto lat2 = degreesToRadians( rhs.latitude );
+      const auto long1 = degreesToRadians( lhs.longitude );
+      const auto long2 = degreesToRadians( rhs.longitude );
+      const auto dist = ( std::pow( std::sin( (1.0 / 2) * ( lat2 - lat1 ) ), 2 ) ) +
+          ( ( std::cos( lat1 ) ) * ( std::cos( lat2 ) ) * ( std::pow( std::sin( (1.0 / 2) * ( long2 - long1 ) ), 2 ) ) );
+      return 2 * std::asin( std::min( 1.0, std::sqrt( dist ) ) ) * 6372797.56085; // distance in metres
+    };
 
     constexpr double req = 6378137.0;             //Radius at equator
     constexpr double flat = 1 / 298.257223563;    //flattening of earth
@@ -96,7 +229,9 @@ namespace spt::geocode
     double lam = lon;
     double tol = std::pow( 10., -12. ); // iteration tolerance
     double diff = 1.;
+    constexpr int maxIterations = 1000;
 
+    int iteration = 0;
     while ( std::abs( diff ) > tol )
     {
       sin_sigma = std::sqrt( std::pow( ( std::cos( u2 ) * std::sin( lam ) ), 2. ) +
@@ -110,6 +245,7 @@ namespace spt::geocode
       lam_pre = lam;
       lam = lon + ( 1 - C ) * flat * sin_alpha * ( sigma + C * sin_sigma * ( cos2sigma + C * cos_sigma * ( 2 * std::pow( cos2sigma, 2. ) - 1 ) ) );
       diff = std::abs( lam_pre - lam );
+      if ( ++iteration > maxIterations ) return Distance{ .distance = haversine(), .azimuth = 0.0 };
     }
 
     const double usq = cos_sq_alpha * ( ( std::pow( req, 2. ) - std::pow( rpol, 2. ) ) / std::pow( rpol ,2. ) );
@@ -131,6 +267,14 @@ namespace spt::geocode
     std::vector<const P*> points;
   };
 
+  /**
+   * Apply k-means clustering algorithm to cluster the set of coordinates around the specified number of centroids.
+   * @tparam P A type that represents a geo-coordinate that conforms to the *LatLng* concept.
+   * @param points The geo-coordinates that are to be clustered.
+   * @param rounds  The number of rounds the algorithm is to be applied to perform the clustering.
+   * @param numClusters The number of clusters to aggregate the coordinates into.
+   * @return A vector of the clustered coordinates.  The vector is sorted in descending order of density around the centroids.
+   */
   template <LatLng P>
   std::vector<Cluster<P>> cluster( const std::vector<P>& points, const int rounds, int numClusters )
   {
@@ -142,6 +286,14 @@ namespace spt::geocode
     };
 
     if ( points.empty() ) return {};
+    if ( points.size() == 1 )
+    {
+      auto vec = std::vector<Cluster<P>>{ 1, Cluster<P>{} };
+      vec.front().centroid.latitude = points.front().latitude;
+      vec.front().centroid.longitude = points.front().longitude;
+      vec.front().points.push_back( &points.front() );
+      return vec;
+    }
 
     auto vec = std::vector<PointDecorator>{};
     vec.reserve( points.size() );
@@ -183,18 +335,16 @@ namespace spt::geocode
         }
       }
 
-      // Create vectors to keep track of data needed to compute means
-      auto nPoints = std::vector( numClusters, 0 );
-      auto sumX = std::vector( numClusters, 0.0 );
-      auto sumY = std::vector( numClusters, 0.0 );
+      // Create vectors to keep track of data needed to compute new centroids
+      auto aggregates = std::vector<std::vector<const P*>>( numClusters, std::vector<const P*>{} );
+      for ( auto& agg : aggregates ) agg.reserve( static_cast<int>( points.size() ) / numClusters );
 
       // Iterate over points to append data to centroids
       for ( auto& p : vec )
       {
-        nPoints[p.cluster] += 1;
-        sumX[p.cluster] += p.point->latitude;
-        sumY[p.cluster] += p.point->longitude;
-
+        auto idx = p.cluster;
+        if ( idx < 0 ) idx = 0; // Some edge case
+        aggregates[idx].push_back( p.point );
         p.minDist = std::numeric_limits<double>::max();  // reset distance
       }
 
@@ -202,8 +352,9 @@ namespace spt::geocode
       for ( auto c = std::begin( centroids ); c != std::end( centroids ); ++c )
       {
         auto clusterId = c - std::begin( centroids );
-        c->latitude = sumX[clusterId] / nPoints[clusterId];
-        c->longitude = sumY[clusterId] / nPoints[clusterId];
+        const auto cp = centroid( std::span<const P*>( aggregates[clusterId] ) );
+        c->latitude = cp.latitude;
+        c->longitude = cp.longitude;
       }
     }
 

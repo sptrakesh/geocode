@@ -103,15 +103,10 @@ ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 add_subdirectory(src/log)
 add_subdirectory(src/lib)
-#add_subdirectory(src/api)
-#add_subdirectory(src/cli)
-#add_subdirectory(src/shell)
-#add_subdirectory(src/service)
 
 if (BUILD_TESTING)
   enable_testing()
   add_subdirectory(test/unit)
-  #add_subdirectory(test/integration)
 endif()
 
 include(CMakePackageConfigHelpers)

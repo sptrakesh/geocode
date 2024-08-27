@@ -4,7 +4,7 @@
 
 #include <catch2/catch_session.hpp>
 
-#include "../../src/log/NanoLog.h"
+#include "../../src/log/NanoLog.hpp"
 
 int main( int argc, char* argv[] )
 {

@@ -1,12 +1,11 @@
-#include "openlocationcode.h"
-
-#include <float.h>
+#include "openlocationcode.hpp"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <cstdint>
 
-#include "codearea.h"
+#include "codearea.hpp"
 
 namespace openlocationcode {
 namespace internal {

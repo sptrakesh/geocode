@@ -11,7 +11,7 @@
 
 #include <string>
 
-#include "codearea.h"
+#include "codearea.hpp"
 
 namespace openlocationcode {
 

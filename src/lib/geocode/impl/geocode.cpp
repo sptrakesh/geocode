@@ -2,17 +2,17 @@
 // Created by Rakesh on 20/07/2024.
 //
 
-#include "../geocode.h"
+#include "../geocode.hpp"
 #include "geofence.hpp"
-#include "openlocationcode.h"
+#include "openlocationcode.hpp"
 
 #if defined __has_include
-  #if __has_include("../../../log/NanoLog.h")
-    #include "../../../log/NanoLog.h"
-  #elif __has_include("../../src/log/NanoLog.h")
-    #include "../../src/log/NanoLog.h"
+  #if __has_include("../../../log/NanoLog.hpp")
+    #include "../../../log/NanoLog.hpp"
+  #elif __has_include("../../src/log/NanoLog.hpp")
+    #include "../../src/log/NanoLog.hpp"
   #else
-    #include <log/NanoLog.h>
+    #include <log/NanoLog.hpp>
   #endif
 #endif
 

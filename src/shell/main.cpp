@@ -2,7 +2,6 @@
 // Created by Rakesh on 31/08/2024.
 //
 
-#include "clara.hpp"
 #include "../lib/geocode/geocode.hpp"
 #include "../log/NanoLog.hpp"
 
@@ -473,41 +472,8 @@ namespace
   }
 }
 
-int main( int argc, char const * const * argv )
+int main()
 {
-  using clara::Opt;
-#ifdef __APPLE__
-  std::string logLevel{ "debug" };
-#else
-  std::string logLevel{"info"};
-#endif
-  std::string dir{"/tmp/"};
-  auto help = false;
-
-  auto options = clara::Help(help) |
-      Opt(logLevel, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
-      Opt(dir, "/tmp/")["-o"]["--log-dir"]("Log directory (default /tmp/)");
-
-  auto result = options.parse( clara::Args( argc, argv ) );
-  if ( !result )
-  {
-    std::cerr << "Error in command line: " << result.errorMessage() << std::endl;
-    exit( 1 );
-  }
-
-  if ( help )
-  {
-    options.writeToStream( std::cout );
-    exit( 0 );
-  }
-
-  if ( logLevel == "debug" ) nanolog::set_log_level( nanolog::LogLevel::DEBUG );
-  else if ( logLevel == "info" ) nanolog::set_log_level( nanolog::LogLevel::INFO );
-  else if ( logLevel == "warn" ) nanolog::set_log_level( nanolog::LogLevel::WARN );
-  else if ( logLevel == "critical" ) nanolog::set_log_level( nanolog::LogLevel::CRIT );
-  nanolog::initialize( nanolog::GuaranteedLogger(), dir, "geocode-shell", false );
-
   shell::run();
-
   return EXIT_SUCCESS;
 }

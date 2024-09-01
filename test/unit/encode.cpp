@@ -6,6 +6,8 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "../../src/lib/geocode/geocode.hpp"
 
+using std::operator ""sv;
+
 SCENARIO( "Open Location Code suite", "[olc]" )
 {
   GIVEN( "The google example geo-coordinate" )
@@ -20,7 +22,7 @@ SCENARIO( "Open Location Code suite", "[olc]" )
 
     AND_WHEN( "Decoding an open location code" )
     {
-      const auto p = spt::geocode::fromLocationCode( "8FVC2222+22" );
+      const auto p = spt::geocode::fromLocationCode( "8FVC2222+22"sv );
       REQUIRE( p.has_value() );
       CHECK_THAT( p.value().latitude, Catch::Matchers::WithinAbs( point.latitude, 0.0001 ) );
       CHECK_THAT( p.value().longitude, Catch::Matchers::WithinAbs( point.longitude, 0.0001 ) );

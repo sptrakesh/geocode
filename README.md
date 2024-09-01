@@ -10,6 +10,10 @@ Provides functions for performing common activities such as:
 * Cluster a set of coordinates using [k-means](https://en.wikipedia.org/wiki/K-means_clustering) algorithm.
 * Convert coordinates into **Open Location Code**.
 
+A simple *shell* application (`geocodesh`) is also available for quickly invoking some of the interfaces provided
+by the library.  Please note that operations involving use of the positionstack API needs an environment variable
+`POSITION_STACK_KEY` to be set with the API key.
+
 ## Build
 Build the library using [cmake](https://cmake.org):
 

@@ -103,6 +103,7 @@ ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 add_subdirectory(src/log)
 add_subdirectory(src/lib)
+add_subdirectory(src/shell)
 
 if (BUILD_TESTING)
   enable_testing()

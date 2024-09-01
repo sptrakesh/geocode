@@ -66,6 +66,8 @@ namespace spt::geocode
    */
   std::expected<Point, std::string> fromLocationCode( const std::string& code );
 
+  inline std::expected<Point, std::string> fromLocationCode( std::string_view code ) { return fromLocationCode( std::string{ code } ); };
+
   /**
    * Look up the closest approximate address for the specified geo-location from the *positionstack* API.
    * @param latitude The latitude for the geo-location to look up closest address for.
